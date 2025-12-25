@@ -56,31 +56,28 @@ class DQNAgent(Agent):
         super().__init__(n_actions)
         self.gamma = gamma
         self.epsilon = epsilon
+        self.epsilon_max = epsilon
         self.epsilon_min = epsilon_min
         self.epsilon_decay = epsilon_decay
         self.batch_size = batch_size
         self.target_update_freq = target_update_freq
         self.max_steps = max_steps
         self.clipping_value = clipping_value
-        self.n_hidden = n_hidden
 
         self.steps = 1
+        self.episodes = 1
+
         self.buffer = ExperienceReplayBuffer(buffer_size)
         self.network = MyNetwork(dim_state, n_actions, n_hidden)
         self.target_network = MyNetwork(dim_state, n_actions, n_hidden)
         self.optimizer = create_optimizer(self.network, learning_rate)
 
-        self.update_target_network()
-    
-    def update_target_network(self):
         self.target_network.load_state_dict(self.network.state_dict())
         self.target_network.eval()
     
     def decay_epsilon(self):
-        self.epsilon = max(self.epsilon_min, self.epsilon - (self.epsilon-self.epsilon_min)*(self.steps - 1)/(self.epsilon_decay-1))
-    
-    def store_experience(self, state, reward, next_state, done):
-        self.buffer.append(Experience(state, self.last_action, reward, next_state, done))
+        self.epsilon = max(self.epsilon_min, self.epsilon_max - (self.epsilon_max-self.epsilon_min)*(self.episodes - 1)/(self.epsilon_decay-1))
+        self.episodes += 1
     
     def forward(self, state: np.ndarray) -> int:
         if np.random.rand() < self.epsilon:
@@ -116,4 +113,4 @@ class DQNAgent(Agent):
 
             self.steps += 1
             if self.steps % self.target_update_freq == 0:
-                self.update_target_network()
+                self.target_network.load_state_dict(self.network.state_dict())
