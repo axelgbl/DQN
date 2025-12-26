@@ -113,6 +113,7 @@ ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
 
+"""
 '''
 C - Implement DQN and solve the problem.
 '''
@@ -205,17 +206,17 @@ plt.show()
 
 
 '''
-Model with 100 episodes
+Model with buffer size of 5000
 '''
 
-N_EPISODES = 100 # Number of episodes between 100-1000 
+N_EPISODES = 200 # Number of episodes between 100-1000 
 GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
 EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
 # Important Note: The variable EPSILON_DECAY is here different from the one in the DQNelements_solved-1.py file that was used during exercice session 3. It is here used to refer to the number Z of episodes epsilon is decayed!
 BATCH_SIZE = 64 # Size of the training batch between 4-128
-BUFFER_SIZE = 20000 # Size of the experience replay buffer between 5000-30000
+BUFFER_SIZE = 5000 # Size of the experience replay buffer between 5000-30000
 LEARNING_RATE = 1e-3 # Learning rate between 1e-3 - 1e-4
 MAX_STEPS = 1000
 TARGET_UPDATE_FREQ = int(BUFFER_SIZE/BATCH_SIZE) # C ~ L/N
@@ -278,7 +279,7 @@ ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
     episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward with 100 episodes')
+ax[0].set_title('Total Reward with buffer size of 5000')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -287,23 +288,23 @@ ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_averag
     episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps with 100 episodes')
+ax[1].set_title('Total number of steps with buffer size of 5000')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
 
 '''
-Model with 500 episodes
+Model with buffer size of 30000
 '''
 
-N_EPISODES = 500 # Number of episodes between 100-1000 
+N_EPISODES = 200 # Number of episodes between 100-1000 
 GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
 EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
 # Important Note: The variable EPSILON_DECAY is here different from the one in the DQNelements_solved-1.py file that was used during exercice session 3. It is here used to refer to the number Z of episodes epsilon is decayed!
 BATCH_SIZE = 64 # Size of the training batch between 4-128
-BUFFER_SIZE = 20000 # Size of the experience replay buffer between 5000-30000
+BUFFER_SIZE = 30000 # Size of the experience replay buffer between 5000-30000
 LEARNING_RATE = 1e-3 # Learning rate between 1e-3 - 1e-4
 MAX_STEPS = 1000
 TARGET_UPDATE_FREQ = int(BUFFER_SIZE/BATCH_SIZE) # C ~ L/N
@@ -366,7 +367,7 @@ ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
     episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward with 500 episodes')
+ax[0].set_title('Total Reward with buffer size of 30000')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -375,12 +376,12 @@ ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_averag
     episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps with 500 episodes')
+ax[1].set_title('Total number of steps with buffer size of 30000')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
 
-'''
+"""
 
 """ Question f """
 
@@ -390,12 +391,10 @@ VALUES = 50
 agent.network = torch.load('neural-network-1.pth', weights_only=False)
 agent.network.eval()
 
-# Create grid for y and omega
 y_values = np.linspace(0, 1.5, VALUES)
 omega_values = np.linspace(-np.pi, np.pi, VALUES)
 Y, Omega = np.meshgrid(y_values, omega_values)
 
-# Compute Q-values for each (y, omega) pair
 Q_max = np.zeros_like(Y)
 Q_argmax = np.zeros_like(Y)
 
@@ -407,7 +406,6 @@ for i in range(len(y_values)):
         with torch.no_grad():
             q_values = agent.network(state_tensor)
         
-        # Get maximum Q-value across all actions
         Q_max[j, i] = q_values.max().item()
         Q_argmax[j, i] = q_values.argmax().item()
 
@@ -439,4 +437,3 @@ ax.set_title('Optimal Action for restricted state space')
 cbar = plt.colorbar(surf, ax=ax, label='Action', shrink=0.5)
 plt.show()
 
-'''
