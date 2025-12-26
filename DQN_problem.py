@@ -11,6 +11,8 @@ from tqdm import trange
 from DQN_agent import RandomAgent, DQNAgent
 from replay_buffer import Experience
 import warnings
+from mpl_toolkits.mplot3d import Axes3D
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def running_average(x, N):
@@ -33,7 +35,7 @@ env = gym.make('LunarLander-v3')
 env.reset()
 
 # Parameters
-N_episodes = 100                             # Number of episodes
+N_episodes = 200                             # Number of episodes
 discount_factor = 0.95                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
@@ -202,15 +204,12 @@ ax[1].grid(alpha=0.3)
 plt.show()
 
 
-
-
-
 '''
-We change gamma to gamma=1
+Model with 100 episodes
 '''
 
-N_EPISODES = 200 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
-GAMMA = 1
+N_EPISODES = 100 # Number of episodes between 100-1000 
+GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
 EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
@@ -271,8 +270,6 @@ for i in EPISODES:
         running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1],
         running_average(episode_number_of_steps, N_EP_RUNNING_AVERAGE)[-1]))
 
-torch.save(agent.network, 'neural-network-1.pth')
-
 env.close()
 
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
@@ -281,7 +278,7 @@ ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
     episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward with Gamma=1')
+ax[0].set_title('Total Reward with 100 episodes')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -290,18 +287,17 @@ ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_averag
     episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps with Gamma=1')
+ax[1].set_title('Total number of steps with 100 episodes')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
 
-
 '''
-We change gamma to gamma=0.05
+Model with 500 episodes
 '''
 
-N_EPISODES = 200 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
-GAMMA = 0.05
+N_EPISODES = 500 # Number of episodes between 100-1000 
+GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
 EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
@@ -362,8 +358,6 @@ for i in EPISODES:
         running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1],
         running_average(episode_number_of_steps, N_EP_RUNNING_AVERAGE)[-1]))
 
-torch.save(agent.network, 'neural-network-1.pth')
-
 env.close()
 
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
@@ -372,7 +366,7 @@ ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
     episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward with Gamma=0.05')
+ax[0].set_title('Total Reward with 500 episodes')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -381,7 +375,68 @@ ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_averag
     episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps with Gamma=0.05')
+ax[1].set_title('Total number of steps with 500 episodes')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
+
+'''
+
+""" Question f """
+
+VALUES = 50
+
+# Load the trained network
+agent.network = torch.load('neural-network-1.pth', weights_only=False)
+agent.network.eval()
+
+# Create grid for y and omega
+y_values = np.linspace(0, 1.5, VALUES)
+omega_values = np.linspace(-np.pi, np.pi, VALUES)
+Y, Omega = np.meshgrid(y_values, omega_values)
+
+# Compute Q-values for each (y, omega) pair
+Q_max = np.zeros_like(Y)
+Q_argmax = np.zeros_like(Y)
+
+for i in range(len(y_values)):
+    for j in range(len(omega_values)):
+        state = np.array([0, y_values[i], 0, 0, omega_values[j], 0, 0, 0], dtype=np.float32)
+        
+        state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+        with torch.no_grad():
+            q_values = agent.network(state_tensor)
+        
+        # Get maximum Q-value across all actions
+        Q_max[j, i] = q_values.max().item()
+        Q_argmax[j, i] = q_values.argmax().item()
+
+
+# Create the plots
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(Y, Omega, Q_max, cmap='viridis')
+
+ax.set_xlabel('Height (y)')
+ax.set_ylabel('Angle (ω)')
+ax.set_zlabel('max_a Q(s(y,ω),a)')
+ax.set_title('Maximum Q-value for restricted state space')
+
+cbar = plt.colorbar(surf, ax=ax, label='Q-value', shrink=0.5)
+plt.show()
+
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(Y, Omega, Q_argmax, cmap='viridis')
+
+ax.set_xlabel('Height (y)')
+ax.set_ylabel('Angle (ω)')
+ax.set_zlabel('Optimal Action argmax_a Q(s(y,ω),a)')
+ax.set_title('Optimal Action for restricted state space')
+
+cbar = plt.colorbar(surf, ax=ax, label='Action', shrink=0.5)
+plt.show()
+
+'''
