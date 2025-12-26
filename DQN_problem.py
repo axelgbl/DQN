@@ -97,7 +97,7 @@ ax[0].plot([i for i in range(1, N_episodes+1)], running_average(
     episode_reward_list, n_ep_running_average), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward vs Episodes')
+ax[0].set_title('Total Reward with Random Agent')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -106,7 +106,7 @@ ax[1].plot([i for i in range(1, N_episodes+1)], running_average(
     episode_number_of_steps, n_ep_running_average), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps vs Episodes')
+ax[1].set_title('Total number of steps with Random Agent')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
@@ -115,7 +115,7 @@ plt.show()
 C - Implement DQN and solve the problem.
 '''
 
-N_EPISODES = 100 # Number of episodes between 100-1000
+N_EPISODES = 200 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
 GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
@@ -187,7 +187,7 @@ ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
     episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
 ax[0].set_xlabel('Episodes')
 ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward vs Episodes')
+ax[0].set_title('Total Reward with DQN')
 ax[0].legend()
 ax[0].grid(alpha=0.3)
 
@@ -196,7 +196,192 @@ ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_averag
     episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
 ax[1].set_xlabel('Episodes')
 ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps vs Episodes')
+ax[1].set_title('Total number of steps with DQN')
+ax[1].legend()
+ax[1].grid(alpha=0.3)
+plt.show()
+
+
+
+
+
+'''
+We change gamma to gamma=1
+'''
+
+N_EPISODES = 200 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
+GAMMA = 1
+EPSILON = 0.99
+EPSILON_MIN = 0.05
+EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
+# Important Note: The variable EPSILON_DECAY is here different from the one in the DQNelements_solved-1.py file that was used during exercice session 3. It is here used to refer to the number Z of episodes epsilon is decayed!
+BATCH_SIZE = 64 # Size of the training batch between 4-128
+BUFFER_SIZE = 20000 # Size of the experience replay buffer between 5000-30000
+LEARNING_RATE = 1e-3 # Learning rate between 1e-3 - 1e-4
+MAX_STEPS = 1000
+TARGET_UPDATE_FREQ = int(BUFFER_SIZE/BATCH_SIZE) # C ~ L/N
+CLIPPING_VALUE = 1 # Norm gradient clipping value between 0.5-2
+N_HIDDEN = 64 # Number of neurons per hidden layer between 8-128
+N_EP_RUNNING_AVERAGE = 50
+
+env = gym.make('LunarLander-v3')
+
+env.reset()
+
+n_actions = env.action_space.n
+dim_state = len(env.observation_space.high)
+
+episode_reward_list = []
+episode_number_of_steps = []
+
+agent = DQNAgent(n_actions, dim_state, GAMMA, EPSILON, EPSILON_MIN, EPSILON_DECAY, BATCH_SIZE, BUFFER_SIZE, LEARNING_RATE, MAX_STEPS, TARGET_UPDATE_FREQ, CLIPPING_VALUE, N_HIDDEN)
+
+EPISODES = trange(N_EPISODES, desc='Episode: ', leave=True)
+
+for i in EPISODES:
+
+    done, truncated = False, False
+    state = env.reset()[0]
+    total_episode_reward = 0.
+    t = 0
+
+    while not (done or truncated or t >= MAX_STEPS):
+
+        action = agent.forward(state)
+        next_state, reward, done, truncated, _ = env.step(action)
+
+        agent.buffer.append(Experience(state, action, reward, next_state, done or truncated))
+        agent.backward()
+
+        total_episode_reward += reward
+        state = next_state
+        t+= 1
+
+    if i<agent.epsilon_decay: agent.decay_epsilon()
+    episode_reward_list.append(total_episode_reward)
+    episode_number_of_steps.append(t)
+
+    if running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1] >= 50:
+        print(f"Problem solved in episode {i}!")
+        break
+
+    EPISODES.set_description(
+        "Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+        i, total_episode_reward, t,
+        running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1],
+        running_average(episode_number_of_steps, N_EP_RUNNING_AVERAGE)[-1]))
+
+torch.save(agent.network, 'neural-network-1.pth')
+
+env.close()
+
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
+ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], episode_reward_list, label='Episode reward')
+ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
+    episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
+ax[0].set_xlabel('Episodes')
+ax[0].set_ylabel('Total reward')
+ax[0].set_title('Total Reward with Gamma=1')
+ax[0].legend()
+ax[0].grid(alpha=0.3)
+
+ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], episode_number_of_steps, label='Steps per episode')
+ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_average(
+    episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
+ax[1].set_xlabel('Episodes')
+ax[1].set_ylabel('Total number of steps')
+ax[1].set_title('Total number of steps with Gamma=1')
+ax[1].legend()
+ax[1].grid(alpha=0.3)
+plt.show()
+
+
+'''
+We change gamma to gamma=0.05
+'''
+
+N_EPISODES = 200 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
+GAMMA = 0.05
+EPSILON = 0.99
+EPSILON_MIN = 0.05
+EPSILON_DECAY = int(0.9*N_EPISODES) # Decay over Z ~ 90%-95% of episodes
+# Important Note: The variable EPSILON_DECAY is here different from the one in the DQNelements_solved-1.py file that was used during exercice session 3. It is here used to refer to the number Z of episodes epsilon is decayed!
+BATCH_SIZE = 64 # Size of the training batch between 4-128
+BUFFER_SIZE = 20000 # Size of the experience replay buffer between 5000-30000
+LEARNING_RATE = 1e-3 # Learning rate between 1e-3 - 1e-4
+MAX_STEPS = 1000
+TARGET_UPDATE_FREQ = int(BUFFER_SIZE/BATCH_SIZE) # C ~ L/N
+CLIPPING_VALUE = 1 # Norm gradient clipping value between 0.5-2
+N_HIDDEN = 64 # Number of neurons per hidden layer between 8-128
+N_EP_RUNNING_AVERAGE = 50
+
+env = gym.make('LunarLander-v3')
+
+env.reset()
+
+n_actions = env.action_space.n
+dim_state = len(env.observation_space.high)
+
+episode_reward_list = []
+episode_number_of_steps = []
+
+agent = DQNAgent(n_actions, dim_state, GAMMA, EPSILON, EPSILON_MIN, EPSILON_DECAY, BATCH_SIZE, BUFFER_SIZE, LEARNING_RATE, MAX_STEPS, TARGET_UPDATE_FREQ, CLIPPING_VALUE, N_HIDDEN)
+
+EPISODES = trange(N_EPISODES, desc='Episode: ', leave=True)
+
+for i in EPISODES:
+
+    done, truncated = False, False
+    state = env.reset()[0]
+    total_episode_reward = 0.
+    t = 0
+
+    while not (done or truncated or t >= MAX_STEPS):
+
+        action = agent.forward(state)
+        next_state, reward, done, truncated, _ = env.step(action)
+
+        agent.buffer.append(Experience(state, action, reward, next_state, done or truncated))
+        agent.backward()
+
+        total_episode_reward += reward
+        state = next_state
+        t+= 1
+
+    if i<agent.epsilon_decay: agent.decay_epsilon()
+    episode_reward_list.append(total_episode_reward)
+    episode_number_of_steps.append(t)
+
+    if running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1] >= 50:
+        print(f"Problem solved in episode {i}!")
+        break
+
+    EPISODES.set_description(
+        "Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+        i, total_episode_reward, t,
+        running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1],
+        running_average(episode_number_of_steps, N_EP_RUNNING_AVERAGE)[-1]))
+
+torch.save(agent.network, 'neural-network-1.pth')
+
+env.close()
+
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
+ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], episode_reward_list, label='Episode reward')
+ax[0].plot([i for i in range(1, len(episode_reward_list)+1)], running_average(
+    episode_reward_list, N_EP_RUNNING_AVERAGE), label='Avg. episode reward')
+ax[0].set_xlabel('Episodes')
+ax[0].set_ylabel('Total reward')
+ax[0].set_title('Total Reward with Gamma=0.05')
+ax[0].legend()
+ax[0].grid(alpha=0.3)
+
+ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], episode_number_of_steps, label='Steps per episode')
+ax[1].plot([i for i in range(1, len(episode_number_of_steps)+1)], running_average(
+    episode_number_of_steps, N_EP_RUNNING_AVERAGE), label='Avg. number of steps per episode')
+ax[1].set_xlabel('Episodes')
+ax[1].set_ylabel('Total number of steps')
+ax[1].set_title('Total number of steps with Gamma=0.05')
 ax[1].legend()
 ax[1].grid(alpha=0.3)
 plt.show()
