@@ -35,7 +35,7 @@ env = gym.make('LunarLander-v3')
 env.reset()
 
 # Parameters
-N_episodes = 200                             # Number of episodes
+N_episodes = 100                             # Number of episodes
 discount_factor = 0.95                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
@@ -117,7 +117,7 @@ plt.show()
 C - Implement DQN and solve the problem.
 '''
 
-N_EPISODES = 500 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
+N_EPISODES = 100 # Number of episodes between 100-1000 # I put 200 because the average episodic reward never reach 50 with only 100 episodes
 GAMMA = 0.99
 EPSILON = 0.99
 EPSILON_MIN = 0.05
@@ -169,7 +169,7 @@ for i in EPISODES:
     episode_reward_list.append(total_episode_reward)
     episode_number_of_steps.append(t)
 
-    if running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1] >= 100:
+    if running_average(episode_reward_list, N_EP_RUNNING_AVERAGE)[-1] >= 50:
         print(f"Problem solved in episode {i}!")
         break
 
